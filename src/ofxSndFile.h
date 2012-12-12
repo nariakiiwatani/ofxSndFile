@@ -9,12 +9,28 @@
 #pragma once
 
 #include "ofMain.h"
-#include <sndfile.hh>
 
 class ofxSndFile
 {
 public:
-     ofxSndFile ();
-    ~ofxSndFile ();
+	
+	ofxSndFile();
+	
+	bool load(string path);
+	bool save(string path);
     
+	int getChannels() { return channels; }
+	void setChannels(int n) { channels = n; }
+	
+	int getSamplerate() { return samplerate; }
+	void setSamplerate(int n) { samplerate = n; }
+	
+	vector<float>& getBuffer() { return buffer; }
+	
+protected:
+	
+	int channels, samplerate;
+	
+	vector<float> buffer;
+	
 };
