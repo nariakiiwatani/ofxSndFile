@@ -15,6 +15,7 @@ class ofxSndFile
 public:
 	
 	ofxSndFile();
+	ofxSndFile(int channels, int samplerate = 44100) : channels(channels), samplerate(samplerate) {}
 	
 	bool load(string path);
 	bool save(string path);
@@ -25,7 +26,14 @@ public:
 	int getSamplerate() { return samplerate; }
 	void setSamplerate(int n) { samplerate = n; }
 	
+	int getNumFrame() { return buffer.size() / channels; }
+	float getDuration();
+	
+	void resizeFrame(size_t size);
+	
 	vector<float>& getBuffer() { return buffer; }
+	
+	void normalize();
 	
 protected:
 	

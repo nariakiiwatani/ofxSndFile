@@ -91,3 +91,33 @@ bool ofxSndFile::save(string path)
 	
 	return true;
 }
+
+float ofxSndFile::getDuration()
+{
+	return (float)getNumFrame() / getSamplerate();
+}
+
+void ofxSndFile::resizeFrame(size_t size)
+{
+	buffer.resize(size * channels);
+}
+
+void ofxSndFile::normalize()
+{
+	float max_sample = 0;
+	
+	for (int i = 0; i < buffer.size(); i++)
+	{
+		max_sample = max(max_sample, buffer[i]);
+	}
+	
+	if (max_sample <= 0) return;
+	
+	float inv_max_sample = 1. / max_sample;
+	
+	for (int i = 0; i < buffer.size(); i++)
+	{
+		buffer[i] *= inv_max_sample;
+	}
+}
+
