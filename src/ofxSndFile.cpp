@@ -9,28 +9,19 @@
 #include "ofxSndFile.h"
 
 #include <sndfile.h>
+#include <sndfile.hh>
 
-ofxSndFile::ofxSndFile() : channels(0), samplerate(0) {}
+ofxSndFile::ofxSndFile() : channels(0), samplerate(0),sfhandle(NULL) {}
 
-bool ofxSndFile::load(string path)
+bool ofxSndFile::load(const string &path)
 {
-	path = ofToDataPath(path);
+	openStream(path);
 	
-	SNDFILE* sf = NULL;
-	SF_INFO sinfo;
-	
-	sinfo.format = 0;
-	
-	sf = sf_open(path.c_str(), SFM_READ, &sinfo);
-	
-	if (sf == NULL)
+	if (sfhandle == NULL)
 	{
 		ofLogError("ofxSndFile") << "can't load file";
 		return false;
 	}
-	
-	channels = sinfo.channels;
-	samplerate = sinfo.samplerate;
 	
 	const size_t read_frames = 2048;
 	const size_t read_samples = read_frames * channels;
@@ -39,25 +30,23 @@ bool ofxSndFile::load(string path)
 	
 	while (true)
 	{
-		sf_count_t n = sf_read_float(sf, buf, read_frames);
+		sf_count_t n = sfhandle->read(buf, read_frames);
 		buffer.insert(buffer.end(), buf, buf + n);
 		if (n < read_frames) break;
 	}
 	
-	sf_close(sf);
+	closeStream();
 	
 	return true;
 }
 
-bool ofxSndFile::save(string path)
+bool ofxSndFile::save(const string &path)
 {
-	path = ofToDataPath(path);
-	
 	SNDFILE* sf = NULL;
 	SF_INFO sinfo;
 	
 	ofFile file;
-	if (!file.open(path, ofFile::WriteOnly, true))
+	if (!file.open(ofToDataPath(path), ofFile::WriteOnly, true))
 	{
 		ofLogError("ofxSndFile") << "can't load file";
 		return false;
@@ -92,9 +81,74 @@ bool ofxSndFile::save(string path)
 	return true;
 }
 
+bool ofxSndFile::openStream(const string &path)
+{
+	closeStream();
+	
+	sfhandle = new SndfileHandle(ofToDataPath(path).c_str(), SFM_READ);
+	
+	if (sfhandle == NULL)
+	{
+		ofLogError("ofxSndFile") << "can't load file";
+		return false;
+	}
+	
+	channels = sfhandle->channels();
+	samplerate = sfhandle->samplerate();
+	return true;
+}
+
+bool ofxSndFile::closeStream()
+{
+	if(sfhandle) {
+		delete sfhandle;
+		sfhandle = NULL;
+	}
+}
+
+bool ofxSndFile::seekStream(size_t frame)
+{
+	if (sfhandle == NULL)
+	{
+		ofLogError("ofxSndFile") << "file not loaded";
+		return false;
+	}
+	sf_count_t count = sfhandle->seek(frame, SFM_READ);
+	
+	return count != -1;
+}
+
+vector<float>& ofxSndFile::readStream(size_t read_frames)
+{
+	buffer.clear();
+	if (sfhandle == NULL)
+	{
+		ofLogError("ofxSndFile") << "file not loaded";
+		return buffer;
+	}
+	const size_t read_samples = read_frames * channels;
+	
+	float buf[read_samples];
+	
+	sf_count_t n = sfhandle->read(buf, read_frames);
+	buffer.insert(buffer.end(), buf, buf + n);
+
+	return buffer;
+}
+
 float ofxSndFile::getDuration()
 {
 	return (float)getNumFrame() / getSamplerate();
+}
+
+int ofxSndFile::getNumFrame()
+{
+	if(sfhandle) {
+		return sfhandle->frames();
+	}
+	else {
+		return buffer.size() / channels;
+	}
 }
 
 void ofxSndFile::resizeFrame(size_t size)

@@ -10,15 +10,21 @@
 
 #include "ofMain.h"
 
+class SndfileHandle;
 class ofxSndFile
 {
 public:
 	
 	ofxSndFile();
-	ofxSndFile(int channels, int samplerate = 44100) : channels(channels), samplerate(samplerate) {}
+	ofxSndFile(int channels, int samplerate = 44100) : channels(channels), samplerate(samplerate),sfhandle(NULL) {}
+	~ofxSndFile(){closeStream();};
 	
-	bool load(string path);
-	bool save(string path);
+	bool load(const string &path);
+	bool save(const string &path);
+	
+	bool openStream(const string &path);
+	bool closeStream();
+	bool isOpenStream() { return sfhandle != NULL; }
     
 	int getChannels() { return channels; }
 	void setChannels(int n) { channels = n; }
@@ -26,17 +32,19 @@ public:
 	int getSamplerate() { return samplerate; }
 	void setSamplerate(int n) { samplerate = n; }
 	
-	int getNumFrame() { return buffer.size() / channels; }
+	int getNumFrame();
 	float getDuration();
 	
 	void resizeFrame(size_t size);
 	
+	bool seekStream(size_t frame);
+	vector<float>& readStream(size_t read_frames);
 	vector<float>& getBuffer() { return buffer; }
 	
 	void normalize();
 	
 protected:
-	
+	SndfileHandle *sfhandle;
 	int channels, samplerate;
 	
 	vector<float> buffer;
