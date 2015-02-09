@@ -26,7 +26,7 @@ bool ofxSndFile::load(const string &path)
 	const size_t read_frames = 2048;
 	const size_t read_samples = read_frames * channels;
 	
-	float buf[read_samples];
+	float *buf = new float[read_samples];
 	
 	while (true)
 	{
@@ -36,6 +36,8 @@ bool ofxSndFile::load(const string &path)
 	}
 	
 	closeStream();
+
+	delete[] buf;
 	
 	return true;
 }
@@ -103,7 +105,9 @@ bool ofxSndFile::closeStream()
 	if(sfhandle) {
 		delete sfhandle;
 		sfhandle = NULL;
+		return true;
 	}
+	return false;
 }
 
 bool ofxSndFile::seekStream(size_t frame)
@@ -128,10 +132,12 @@ vector<float>& ofxSndFile::readStream(size_t read_frames)
 	}
 	const size_t read_samples = read_frames * channels;
 	
-	float buf[read_samples];
+	float *buf = new float[read_samples];
 	
 	sf_count_t n = sfhandle->read(buf, read_frames);
 	buffer.insert(buffer.end(), buf, buf + n);
+
+	delete[] buf;
 
 	return buffer;
 }
